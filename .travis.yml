@@ -1,0 +1,24 @@
+sudo: required
+services:
+  - docker
+
+before_install:
+  - docker build -t alk3mist/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true alk3mist/react-test npm test -- --coverage
+
+after_success:
+  - docker build -t alk3mist/multi-client ./client
+  - docker build -t alk3mist/multi-nginx ./nginx
+  - docker build -t alk3mist/multi-server ./server
+  - docker build -t alk3mist/multi-worker ./worker
+  # Log in to the Docker CLI
+  # https://docs.docker.com/engine/reference/commandline/login/#provide-a-password-using-stdin
+  # https://docs.travis-ci.com/user/docker/#pushing-a-docker-image-to-a-registry
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Take those images and push them to docker hub
+  - docker push alk3mist/multi-client
+  - docker push alk3mist/multi-nginx
+  - docker push alk3mist/multi-server
+  - docker push alk3mist/multi-worker
